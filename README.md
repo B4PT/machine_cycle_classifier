@@ -57,3 +57,12 @@ Open your web browser and go to http://localhost:80. You should see a form to en
 
 - Error loading ASGI app: Ensure that main.py is correctly specified and that your Dockerfile is in the correct directory.
 - Empty Predictions: Verify the data files and ensure they are correctly formatted and located in the data_subset directory.
+
+## Tests
+
+To perform some unit tests, git clone repository, install python librairy pytest and launch command:
+
+    ```sh
+    pytest test.py
+
+    ```
