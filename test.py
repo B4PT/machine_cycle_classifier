@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, roc_auc_score
 from sklearn.preprocessing import label_binarize
-from notebook.classifier import process_data, binarize_targets
+from classifier import process_data, binarize_targets
 
 
 # Mock data for tests
