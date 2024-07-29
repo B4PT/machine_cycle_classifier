@@ -38,10 +38,14 @@ Edit config.py to set the TRAIN_SIZE and TARGET_COLUMN values.
 
 1. **Build the Docker Image**
 
+   ```sh
    docker build -t classify .
+   ```
 
 2. **Run the Docker Container**
+   ```sh
    docker run -p 80:80 classify
+   ```
 
 The application will be available at http://localhost:80.
 
