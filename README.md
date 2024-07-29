@@ -60,9 +60,10 @@ Open your web browser and go to http://localhost:80. You should see a form to en
 
 ## Tests
 
-To perform some unit tests, git clone repository, install python librairy pytest and launch command:
-
-    ```sh
-    pytest test.py
-
-    ```
+To perform the unit tests defined in the test.py file:
+1. git clone repository
+2. Install python librairy pytest
+3. Launch the following command
+   ```sh
+   pytest test.py
+   ```
