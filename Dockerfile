@@ -13,5 +13,7 @@ COPY data_subset /app/data_subset
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Run the script when the container launches
-CMD ["python", "classify.py"]
+EXPOSE 80
+
+# Run the FastAPI app using uvicorn
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]

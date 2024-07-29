@@ -1,3 +1,5 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, GridSearchCV
@@ -15,6 +17,9 @@ from sklearn.metrics import (
     f1_score,
 )
 import matplotlib.pyplot as plt
+
+# Initialize FastAPI app
+app = FastAPI()
 
 # Define constants
 PROFILE_COLUMN_NAMES = [
@@ -212,4 +217,48 @@ for model in models:
     metrics = model.evaluate(X_test, y_test)
     model_results[model.name] = metrics
 
+print("Models trained with SUCESS")
 print(model_results)
+
+
+class PredictionRequest(BaseModel):
+    cycle_number: int
+    model_name: str
+
+
+@app.post("/predict/")
+async def predict(request: PredictionRequest):
+    cycle_number = request.cycle_number
+    model_name = request.model_name
+
+    # Load the cycle data
+    cycle_data = data.iloc[[cycle_number]].drop(columns=[TARGET_COLUMN])
+
+    if cycle_data.empty:
+        raise HTTPException(
+            status_code=404, detail=f"No data found for cycle number {cycle_number}"
+        )
+
+    # Select the model
+    selected_model = next((model for model in models if model.name == model_name), None)
+
+    if selected_model is None:
+        raise HTTPException(status_code=404, detail=f"Model {model_name} not found")
+
+    # Predict the condition
+    try:
+        prediction = selected_model.predict_cycle(cycle_data)
+    except ValueError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return {
+        "cycle_number": cycle_number,
+        "model_name": model_name,
+        "prediction": prediction.tolist(),
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=80)
