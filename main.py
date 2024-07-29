@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Form
+from fastapi.responses import HTMLResponse
+from jinja2 import Template
 from pydantic import BaseModel
 import pandas as pd
 import numpy as np
@@ -217,48 +219,69 @@ for model in models:
     metrics = model.evaluate(X_test, y_test)
     model_results[model.name] = metrics
 
-print("Models trained with SUCESS")
+# Determine the best model based on F1 score
+best_model_name = max(model_results, key=lambda x: model_results[x]["f1_score"])
+best_model = next(model for model in models if model.name == best_model_name)
+
+print(
+    f"Best model: {best_model.name} with F1 score: {model_results[best_model_name]['f1_score']}"
+)
 print(model_results)
 
+# HTML Template for using the best model only
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cycle Prediction</title>
+</head>
+<body>
+    <h1>Cycle Prediction</h1>
+    <form action="/predict" method="post">
+        <label for="cycle_number">Cycle Number:</label>
+        <input type="number" id="cycle_number" name="cycle_number" required>
+        <button type="submit">Predict</button>
+    </form>
+    <h2>Prediction Result</h2>
+    <p>Cycle Number: {{ cycle_number }}</p>
+    <p>Prediction: {{ prediction }}</p>
+</body>
+</html>
+"""
 
-class PredictionRequest(BaseModel):
-    cycle_number: int
-    model_name: str
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    template = Template(HTML_TEMPLATE)
+    return HTMLResponse(content=template.render())
 
 
-@app.post("/predict/")
-async def predict(request: PredictionRequest):
-    cycle_number = request.cycle_number
-    model_name = request.model_name
-
-    # Load the cycle data
+@app.post("/predict", response_class=HTMLResponse)
+async def predict(cycle_number: int = Form(...)):
+    # Use the pre-determined best model
     cycle_data = data.iloc[[cycle_number]].drop(columns=[TARGET_COLUMN])
 
     if cycle_data.empty:
-        raise HTTPException(
-            status_code=404, detail=f"No data found for cycle number {cycle_number}"
+        template = Template(HTML_TEMPLATE)
+        return HTMLResponse(
+            content=template.render(
+                cycle_number=cycle_number,
+                prediction="No data found for the given cycle number",
+            )
         )
 
-    # Select the model
-    selected_model = next((model for model in models if model.name == model_name), None)
+    prediction = best_model.predict_cycle(cycle_data)
 
-    if selected_model is None:
-        raise HTTPException(status_code=404, detail=f"Model {model_name} not found")
+    if prediction is None:
+        template = Template(HTML_TEMPLATE)
+        return HTMLResponse(
+            content=template.render(
+                cycle_number=cycle_number,
+                prediction="No prediction found",
+            )
+        )
 
-    # Predict the condition
-    try:
-        prediction = selected_model.predict_cycle(cycle_data)
-    except ValueError as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    return {
-        "cycle_number": cycle_number,
-        "model_name": model_name,
-        "prediction": prediction.tolist(),
-    }
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=80)
+    template = Template(HTML_TEMPLATE)
+    return HTMLResponse(
+        content=template.render(cycle_number=cycle_number, prediction=prediction[0])
+    )

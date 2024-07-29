@@ -1,6 +1,7 @@
 docker build -t classify .
 
 #docker run --rm classify
+#api
 docker run -p 80:80 classify
 
 #CURL
@@ -19,3 +20,6 @@ response = requests.post(url, json=payload)
 
 print("Status Code:", response.status_code)
 print("Response JSON:", response.json())
+
+#URL
+http://localhost:80
